@@ -1,5 +1,7 @@
 # AutoSense
 
+![AutoSense Logo](./assets/logo.webp)
+
 ## Overview
 
 AutoSense is a mobile application designed to enhance vehicle maintenance, management, and preventive diagnostics. By leveraging advanced technology, the app aims to extend vehicle longevity and improve operational efficiency.
