@@ -1,6 +1,6 @@
 # AutoSense
 
-![AutoSense Logo](./assets/logo.webp)
+![AutoSense Logo](./assets/logo_small.jpeg)
 
 ## Overview
 
