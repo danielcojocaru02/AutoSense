@@ -1,4 +1,4 @@
-# AutoSense
+# AutoSense - Advanced Monitoring and Preventive Maintenance for Your Car
 
 ![AutoSense Logo](./assets/logo_small.jpeg)
 
