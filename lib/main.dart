@@ -46,12 +46,14 @@ class _AddCarScreenState extends State<AddCarScreen> {
   String? _selectedYear;
   String? _selectedEngine;
   String? _selectedTransmission;
+  String? _selectedPower;
 
   List<String> _makes = [];
   List<String> _models = [];
   List<String> _years = [];
-  List<String> _engines = [];
-  List<String> _transmissions = [];
+  List<String> _engines = ['2.0L I4', '2.5L I4', '3.0L V6', '3.5L V6', '5.0L V8'];
+  List<String> _transmissions = ['6-Speed Manual','6-Speed Automatic', '8-Speed Automatic', 'CVT'];
+  List<String> _powerOptions = ['150 hp', '200 hp', '250 hp', '300 hp', '350 hp'];
 
   bool _isLoading = false;
 
@@ -64,14 +66,19 @@ class _AddCarScreenState extends State<AddCarScreen> {
   Future<void> _loadMakes() async {
     setState(() => _isLoading = true);
     try {
-      // In a real app, you'd fetch this data from an API
-      // For this example, we'll use a simulated API call
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        _makes = ['Toyota', 'Honda', 'Ford', 'BMW', 'Mercedes'];
-        _isLoading = false;
-      });
+      final response = await http.get(Uri.parse('https://vpic.nhtsa.dot.gov/api/vehicles/GetMakesForVehicleType/car?format=json'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _makes = List<String>.from(data['Results'].map((make) => make['MakeName']));
+          _makes.sort();
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load makes');
+      }
     } catch (e) {
+      print('Error loading makes: $e');
       setState(() => _isLoading = false);
       _showErrorSnackBar('Failed to load car makes. Please try again.');
     }
@@ -80,72 +87,44 @@ class _AddCarScreenState extends State<AddCarScreen> {
   Future<void> _loadModels(String make) async {
     setState(() => _isLoading = true);
     try {
-      // Simulated API call
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        _models = ['Model 1', 'Model 2', 'Model 3'];
-        _selectedModel = null;
-        _selectedYear = null;
-        _selectedEngine = null;
-        _selectedTransmission = null;
-        _isLoading = false;
-      });
+      final response = await http.get(Uri.parse('https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/$make?format=json'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _models = List<String>.from(data['Results'].map((model) => model['Model_Name']));
+          _models = _models.toSet().toList();
+          _models.sort();
+          _selectedModel = null;
+          _selectedYear = null;
+          _selectedEngine = null;
+          _selectedTransmission = null;
+          _selectedPower = null;
+          _years = [];
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load models');
+      }
     } catch (e) {
+      print('Error loading models: $e');
       setState(() => _isLoading = false);
       _showErrorSnackBar('Failed to load car models. Please try again.');
     }
   }
 
-  Future<void> _loadYears(String model) async {
-    setState(() => _isLoading = true);
-    try {
-      // Simulated API call
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        _years = ['2020', '2021', '2022', '2023'];
-        _selectedYear = null;
-        _selectedEngine = null;
-        _selectedTransmission = null;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showErrorSnackBar('Failed to load car years. Please try again.');
-    }
-  }
-
-  Future<void> _loadEngines(String year) async {
-    setState(() => _isLoading = true);
-    try {
-      // Simulated API call
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        _engines = ['1.5L 4-cylinder', '2.0L 4-cylinder', '3.0L V6'];
-        _selectedEngine = null;
-        _selectedTransmission = null;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showErrorSnackBar('Failed to load engine options. Please try again.');
-    }
-  }
-
-  Future<void> _loadTransmissions(String engine) async {
-    setState(() => _isLoading = true);
-    try {
-      // Simulated API call
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        _transmissions = ['6-speed Manual', '8-speed Automatic', 'CVT'];
-        _selectedTransmission = null;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showErrorSnackBar('Failed to load transmission options. Please try again.');
-    }
-  }
+Future<void> _loadYears(String make, String model) async {
+  setState(() {
+    // Generate years from 1990 to current year
+    final currentYear = DateTime.now().year;
+    _years = List.generate(
+      currentYear - 1990 + 1, 
+      (index) => (currentYear - index).toString()
+    );
+    _years.sort((a, b) => int.parse(b).compareTo(int.parse(a)));
+    _selectedYear = null;
+    _isLoading = false;
+  });
+}
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -158,7 +137,8 @@ class _AddCarScreenState extends State<AddCarScreen> {
         _selectedModel != null &&
         _selectedYear != null &&
         _selectedEngine != null &&
-        _selectedTransmission != null) {
+        _selectedTransmission != null &&
+        _selectedPower != null) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => MainScreen(
@@ -167,6 +147,7 @@ class _AddCarScreenState extends State<AddCarScreen> {
             carYear: _selectedYear!,
             carEngine: _selectedEngine!,
             carTransmission: _selectedTransmission!,
+            carPower: _selectedPower!,
           ),
         ),
       );
@@ -184,7 +165,7 @@ class _AddCarScreenState extends State<AddCarScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -195,6 +176,11 @@ class _AddCarScreenState extends State<AddCarScreen> {
                     onChanged: (value) {
                       setState(() {
                         _selectedMake = value;
+                        _selectedModel = null;
+                        _selectedYear = null;
+                        _selectedEngine = null;
+                        _selectedTransmission = null;
+                        _selectedPower = null;
                       });
                       if (value != null) _loadModels(value);
                     },
@@ -209,8 +195,12 @@ class _AddCarScreenState extends State<AddCarScreen> {
                         : (value) {
                             setState(() {
                               _selectedModel = value;
+                              _selectedYear = null;
+                              _selectedEngine = null;
+                              _selectedTransmission = null;
+                              _selectedPower = null;
                             });
-                            if (value != null) _loadYears(value);
+                            if (value != null) _loadYears(_selectedMake!, value);
                           },
                     decoration: const InputDecoration(labelText: 'Car Model'),
                   ),
@@ -223,8 +213,10 @@ class _AddCarScreenState extends State<AddCarScreen> {
                         : (value) {
                             setState(() {
                               _selectedYear = value;
+                              _selectedEngine = null;
+                              _selectedTransmission = null;
+                              _selectedPower = null;
                             });
-                            if (value != null) _loadEngines(value);
                           },
                     decoration: const InputDecoration(labelText: 'Car Year'),
                   ),
@@ -237,8 +229,9 @@ class _AddCarScreenState extends State<AddCarScreen> {
                         : (value) {
                             setState(() {
                               _selectedEngine = value;
+                              _selectedTransmission = null;
+                              _selectedPower = null;
                             });
-                            if (value != null) _loadTransmissions(value);
                           },
                     decoration: const InputDecoration(labelText: 'Engine'),
                   ),
@@ -251,9 +244,23 @@ class _AddCarScreenState extends State<AddCarScreen> {
                         : (value) {
                             setState(() {
                               _selectedTransmission = value;
+                              _selectedPower = null;
                             });
                           },
                     decoration: const InputDecoration(labelText: 'Transmission'),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _selectedPower,
+                    items: _powerOptions.map((power) => DropdownMenuItem(value: power, child: Text(power))).toList(),
+                    onChanged: _selectedTransmission == null
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _selectedPower = value;
+                            });
+                          },
+                    decoration: const InputDecoration(labelText: 'Power'),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -273,6 +280,7 @@ class MainScreen extends StatefulWidget {
   final String carYear;
   final String carEngine;
   final String carTransmission;
+  final String carPower;
 
   const MainScreen({
     super.key,
@@ -281,6 +289,7 @@ class MainScreen extends StatefulWidget {
     required this.carYear,
     required this.carEngine,
     required this.carTransmission,
+    required this.carPower,
   });
 
   @override
@@ -290,36 +299,26 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  late final List<Widget> _widgetOptions;
-
-  @override
-  void initState() {
-    super.initState();
-    _widgetOptions = <Widget>[
-      DashboardScreen(
-        carMake: widget.carMake,
-        carModel: widget.carModel,
-        carYear: widget.carYear,
-        carEngine: widget.carEngine,
-        carTransmission: widget.carTransmission,
-      ),
-      const DiagnosticsScreen(),
-      const NavigationScreen(),
-      const SettingsScreen(),
-    ];
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: _widgetOptions.elementAt(_selectedIndex),
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            DashboardScreen(
+              carMake: widget.carMake,
+              carModel: widget.carModel,
+              carYear: widget.carYear,
+              carEngine: widget.carEngine,
+              carTransmission: widget.carTransmission,
+              carPower: widget.carPower,
+            ),
+            const Center(child: Text('Diagnostics Screen')),
+            const Center(child: Text('Navigation Screen')),
+            const Center(child: Text('Settings Screen')),
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF18181B),
@@ -327,7 +326,7 @@ class _MainScreenState extends State<MainScreen> {
         unselectedItemColor: Colors.grey[600],
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        onTap: (index) => setState(() => _selectedIndex = index),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Dashboard'),
           BottomNavigationBarItem(icon: Icon(Icons.speed), label: 'Diagnostics'),
@@ -345,6 +344,7 @@ class DashboardScreen extends StatelessWidget {
   final String carYear;
   final String carEngine;
   final String carTransmission;
+  final String carPower;
 
   const DashboardScreen({
     super.key,
@@ -353,6 +353,7 @@ class DashboardScreen extends StatelessWidget {
     required this.carYear,
     required this.carEngine,
     required this.carTransmission,
+    required this.carPower,
   });
 
   @override
@@ -376,7 +377,7 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '$carEngine, $carTransmission',
+                    '$carEngine, $carTransmission, $carPower',
                     style: TextStyle(
                       color: Colors.grey[400],
                       fontSize: 14,
@@ -388,8 +389,7 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-
-          // Main Card
+          // Main content
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -398,59 +398,43 @@ class DashboardScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Car Image Section
-                  Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                      image: DecorationImage(
-                        image: NetworkImage('https://placeholder.com/400x240'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
+                  _buildCarImage(),
                   const SizedBox(height: 24),
-
-                  // Quick Actions Grid
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildQuickActionButton(Icons.directions_car, 'Status'),
-                        _buildQuickActionButton(Icons.thermostat, 'Climate'),
-                        _buildQuickActionButton(Icons.power_settings_new, 'Power'),
-                        _buildQuickActionButton(Icons.settings, 'Settings'),
-                      ],
-                    ),
-                  ),
+                  _buildQuickActions(),
                   const SizedBox(height: 24),
-
-                  // Status Cards
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildStatusCard(
-                          'Engine Status',
-                          Icons.speed,
-                          72,
-                          showProgress: true,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildStatusCard(
-                          'Location',
-                          Icons.location_on,
-                          null,
-                          subtitle: '123 Main Street, Boston, MA',
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildStatusCards(),
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCarImage() {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        image: const DecorationImage(
+          image: NetworkImage('https://placeholder.com/400x240'),
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildQuickActionButton(Icons.directions_car, 'Status'),
+          _buildQuickActionButton(Icons.thermostat, 'Climate'),
+          _buildQuickActionButton(Icons.power_settings_new, 'Power'),
+          _buildQuickActionButton(Icons.settings, 'Settings'),
         ],
       ),
     );
@@ -467,21 +451,36 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: const Color(0xFFF97316),
-          ),
+          Icon(icon, color: const Color(0xFFF97316)),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12),
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusCards() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildStatusCard(
+            'Engine Status',
+            Icons.speed,
+            progress: 72,
+          ),
+          const SizedBox(height: 16),
+          _buildStatusCard(
+            'Location',
+            Icons.location_on,
+            subtitle: '123 Main Street, Boston, MA',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatusCard(String title, IconData icon, double? progress, {String? subtitle, bool showProgress = false}) {
+  Widget _buildStatusCard(String title, IconData icon, {double? progress, String? subtitle}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -497,19 +496,16 @@ class DashboardScreen extends StatelessWidget {
                 children: [
                   Icon(icon, color: const Color(0xFFF97316)),
                   const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
                 ],
               ),
               const Icon(Icons.chevron_right, color: Colors.grey),
             ],
           ),
-          if (showProgress) ...[
+          if (progress != null) ...[
             const SizedBox(height: 12),
             LinearProgressIndicator(
-              value: progress! / 100,
+              value: progress / 100,
               backgroundColor: Colors.grey[800],
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
             ),
@@ -523,39 +519,6 @@ class DashboardScreen extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-}
-
-class DiagnosticsScreen extends StatelessWidget {
-  const DiagnosticsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Diagnostics Screen'),
-    );
-  }
-}
-
-class NavigationScreen extends StatelessWidget {
-  const NavigationScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Navigation Screen'),
-    );
-  }
-}
-
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Settings Screen'),
     );
   }
 }
