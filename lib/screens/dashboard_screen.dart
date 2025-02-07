@@ -81,16 +81,19 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCarImage() {
-    return Container(
-      height: 200,
+Widget _buildCarImage() {
+  return Padding(
+    padding: const EdgeInsets.only(top: 20), // Padding de 20px deasupra imaginii
+    child: Container(
+      height: 270,
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         image: const DecorationImage(
-          image: NetworkImage('https://placeholder.com/400x240'),
+          image: AssetImage('assets/land_cruiser_banner.png'),
           fit: BoxFit.cover,
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
