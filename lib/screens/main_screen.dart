@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
+import 'diagnostics_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final String carMake;
@@ -41,7 +42,7 @@ class _MainScreenState extends State<MainScreen> {
               carTransmission: widget.carTransmission,
               carPower: widget.carPower,
             ),
-            const Center(child: Text('Diagnostics Screen')),
+            const DiagnosticsScreen(), // Use the DiagnosticsScreen here
             const Center(child: Text('Navigation Screen')),
             const Center(child: Text('Settings Screen')),
           ],
@@ -64,3 +65,4 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
+
