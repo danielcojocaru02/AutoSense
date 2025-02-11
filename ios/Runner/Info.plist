@@ -2,21 +2,25 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- ... other configurations ... -->
-    
-    <!-- Bluetooth permission descriptions -->
-    <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>This app needs Bluetooth access to connect to the OBD-II adapter and read vehicle data.</string>
-    <key>NSBluetoothPeripheralUsageDescription</key>
-    <string>This app needs Bluetooth access to connect to the OBD-II adapter and read vehicle data.</string>
-    
-    <!-- Location permission descriptions (might be needed for Bluetooth scanning) -->
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>This app needs location access for finding Bluetooth devices nearby.</string>
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>This app needs location access for finding Bluetooth devices nearby.</string>
-    
-    <!-- ... rest of your configurations ... -->
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleExecutable</key>
+	<string>Runner</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>This app needs Bluetooth access to connect to the OBD-II adapter and read vehicle data.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>This app needs Bluetooth access to connect to the OBD-II adapter and read vehicle data.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs location access for finding Bluetooth devices nearby.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs location access for finding Bluetooth devices nearby.</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 </dict>
 </plist>
-

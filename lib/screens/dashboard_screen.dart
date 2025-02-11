@@ -83,9 +83,9 @@ Widget _buildCarImage() {
     padding: const EdgeInsets.only(top: 20), // Padding de 20px deasupra imaginii
     child: Container(
       height: 270,
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        image: const DecorationImage(
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        image: DecorationImage(
           image: AssetImage('assets/land_cruiser_banner.png'),
           fit: BoxFit.cover,
         ),
