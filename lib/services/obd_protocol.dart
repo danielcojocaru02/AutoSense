@@ -6,7 +6,7 @@ class OBDCommand {
 
   OBDCommand(this.mode, this.pid, this.name, this.calculator);
 
-  String get command => mode + pid + '\r';
+  String get command => '$mode$pid\r';
 }
 
 class OBDProtocol {

@@ -23,9 +23,9 @@ class _AddCarScreenState extends State<AddCarScreen> {
   List<String> _makes = [];
   List<String> _models = [];
   List<String> _years = [];
-  List<String> _engines = ['2.0L I4', '2.5L I4', '3.0L V6', '3.5L V6', '5.0L V8'];
-  List<String> _transmissions = ['6-Speed Manual','6-Speed Automatic', '8-Speed Automatic', 'CVT'];
-  List<String> _powerOptions = ['150 hp', '200 hp', '250 hp', '300 hp', '350 hp'];
+  final List<String> _engines = ['2.0L I4', '2.5L I4', '3.0L V6', '3.5L V6', '5.0L V8'];
+  final List<String> _transmissions = ['6-Speed Manual','6-Speed Automatic', '8-Speed Automatic', 'CVT'];
+  final List<String> _powerOptions = ['150 hp', '200 hp', '250 hp', '300 hp', '350 hp'];
 
   bool _isLoading = false;
 
