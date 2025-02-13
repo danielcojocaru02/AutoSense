@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../services/obd_service.dart';
+import '../services/sensor_preferences.dart';
 
 class DiagnosticsScreen extends StatefulWidget {
   const DiagnosticsScreen({Key? key}) : super(key: key);
@@ -12,30 +14,39 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
   bool _isConnected = false;
   String _connectionStatus = 'Disconnected';
   Map<String, String> _diagnosticData = {};
+  List<String> _selectedSensors = [];
+  final OBDService _obdService = OBDService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedSensors();
+  }
+
+  Future<void> _loadSelectedSensors() async {
+    final sensors = await SensorPreferences.getSelectedSensors();
+    setState(() {
+      _selectedSensors = List<String>.from(sensors);
+    });
+  }
 
   Future<void> _connectToOBD() async {
     // TODO: Implement actual OBD-II Bluetooth connection logic
+    // For example: bool success = await _obdService.connect('00:00:00:00:00:00');
+    bool success = true; // Placeholder for actual connection
     setState(() {
-      _isConnected = true;
-      _connectionStatus = 'Connected';
+      _isConnected = success;
+      _connectionStatus = success ? 'Connected' : 'Connection failed';
     });
-    _simulateDiagnosticData();
+    if (success) {
+      _startListeningToOBDData();
+    }
   }
 
-  void _simulateDiagnosticData() {
-    // This is a placeholder for real OBD-II data
-    Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (!_isConnected) {
-        timer.cancel();
-        return;
-      }
+  void _startListeningToOBDData() {
+    _obdService.dataStream.listen((data) {
       setState(() {
-        _diagnosticData = {
-          'Engine RPM': '${1000 + (DateTime.now().second * 50)}',
-          'Vehicle Speed': '${DateTime.now().second} km/h',
-          'Coolant Temp': '${80 + (DateTime.now().second % 20)}°C',
-          'Battery Voltage': '${12 + (DateTime.now().millisecond / 1000)} V',
-        };
+        _diagnosticData = data;
       });
     });
   }
@@ -62,6 +73,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
               _buildConnectionStatus(),
               const SizedBox(height: 20),
               _buildConnectButton(),
+              const SizedBox(height: 20),
+              _buildSensorSelectionButton(),
               const SizedBox(height: 20),
               Expanded(child: _buildDiagnosticInfo()),
             ],
@@ -120,6 +133,29 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     );
   }
 
+  Widget _buildSensorSelectionButton() {
+    return ElevatedButton(
+      onPressed: _showSensorSelectionDialog,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF27272A),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Center(
+        child: Text(
+          'Select Sensors',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDiagnosticInfo() {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -161,6 +197,60 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _showSensorSelectionDialog() {
+    List<String> tempSelectedSensors = List<String>.from(_selectedSensors);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Select Sensors'),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return SingleChildScrollView(
+                child: Column(
+                  children: SensorPreferences.allSensors.entries.map((entry) {
+                    return CheckboxListTile(
+                      title: Text(entry.value),
+                      value: tempSelectedSensors.contains(entry.key),
+                      onChanged: (bool? value) {
+                        setState(() {
+                          if (value == true) {
+                            tempSelectedSensors.add(entry.key);
+                          } else {
+                            tempSelectedSensors.remove(entry.key);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              );
+            },
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Save'),
+              onPressed: () {
+                setState(() {
+                  _selectedSensors = tempSelectedSensors;
+                });
+                SensorPreferences.setSelectedSensors(_selectedSensors);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
         );
       },
     );

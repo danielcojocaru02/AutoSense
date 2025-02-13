@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'main_screen.dart';
 
-
 class AddCarScreen extends StatefulWidget {
   const AddCarScreen({super.key});
 
@@ -84,19 +83,19 @@ class _AddCarScreenState extends State<AddCarScreen> {
     }
   }
 
-Future<void> _loadYears(String make, String model) async {
-  setState(() {
-    // Generate years from 1990 to current year
-    final currentYear = DateTime.now().year;
-    _years = List.generate(
-      currentYear - 1990 + 1, 
-      (index) => (currentYear - index).toString()
-    );
-    _years.sort((a, b) => int.parse(b).compareTo(int.parse(a)));
-    _selectedYear = null;
-    _isLoading = false;
-  });
-}
+  Future<void> _loadYears(String make, String model) async {
+    setState(() {
+      // Generate years from 1990 to current year
+      final currentYear = DateTime.now().year;
+      _years = List.generate(
+        currentYear - 1990 + 1, 
+        (index) => (currentYear - index).toString()
+      );
+      _years.sort((a, b) => int.parse(b).compareTo(int.parse(a)));
+      _selectedYear = null;
+      _isLoading = false;
+    });
+  }
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -245,3 +244,4 @@ Future<void> _loadYears(String make, String model) async {
     );
   }
 }
+

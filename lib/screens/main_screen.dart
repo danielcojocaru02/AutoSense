@@ -1,66 +1,80 @@
 import 'package:flutter/material.dart';
-import 'dashboard_screen.dart';
-import 'diagnostics_screen.dart';
+import './dashboard_screen.dart';
+import './diagnostics_screen.dart';
+import './add_car_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  final String carMake;
-  final String carModel;
-  final String carYear;
-  final String carEngine;
-  final String carTransmission;
-  final String carPower;
+  final String? carMake;
+  final String? carModel;
+  final String? carYear;
+  final String? carEngine;
+  final String? carTransmission;
+  final String? carPower;
 
   const MainScreen({
-    super.key,
-    required this.carMake,
-    required this.carModel,
-    required this.carYear,
-    required this.carEngine,
-    required this.carTransmission,
-    required this.carPower,
-  });
+    Key? key,
+    this.carMake,
+    this.carModel,
+    this.carYear,
+    this.carEngine,
+    this.carTransmission,
+    this.carPower,
+  }) : super(key: key);
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  _MainScreenState createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      DashboardScreen(
+        carMake: widget.carMake,
+        carModel: widget.carModel,
+        carYear: widget.carYear,
+        carEngine: widget.carEngine,
+        carTransmission: widget.carTransmission,
+        carPower: widget.carPower,
+      ),
+      const DiagnosticsScreen(),
+      const AddCarScreen(),
+    ];
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            DashboardScreen(
-              carMake: widget.carMake,
-              carModel: widget.carModel,
-              carYear: widget.carYear,
-              carEngine: widget.carEngine,
-              carTransmission: widget.carTransmission,
-              carPower: widget.carPower,
-            ),
-            const DiagnosticsScreen(), // Use the DiagnosticsScreen here
-            const Center(child: Text('Navigation Screen')),
-            const Center(child: Text('Settings Screen')),
-          ],
-        ),
-      ),
+      body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xFF18181B),
-        selectedItemColor: const Color(0xFFF97316),
-        unselectedItemColor: Colors.grey[600],
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.directions_car), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.speed), label: 'Diagnostics'),
-          BottomNavigationBarItem(icon: Icon(Icons.location_on), label: 'Navigation'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: 'Diagnostics',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_circle_outline),
+            label: 'Add Car',
+          ),
         ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        onTap: _onItemTapped,
       ),
     );
   }
