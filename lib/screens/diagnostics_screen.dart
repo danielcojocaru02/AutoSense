@@ -202,58 +202,86 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     );
   }
 
-  void _showSensorSelectionDialog() {
-    List<String> tempSelectedSensors = List<String>.from(_selectedSensors);
+ void _showSensorSelectionDialog() {
+  List<String> tempSelectedSensors = List<String>.from(_selectedSensors);
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Select Sensors'),
-          content: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return SingleChildScrollView(
-                child: Column(
-                  children: SensorPreferences.allSensors.entries.map((entry) {
-                    return CheckboxListTile(
-                      title: Text(entry.value),
-                      value: tempSelectedSensors.contains(entry.key),
-                      onChanged: (bool? value) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Select Sensors'),
+        content: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () {
                         setState(() {
-                          if (value == true) {
-                            tempSelectedSensors.add(entry.key);
-                          } else {
-                            tempSelectedSensors.remove(entry.key);
-                          }
+                          tempSelectedSensors = SensorPreferences.allSensors.keys.toList();
                         });
                       },
-                    );
-                  }).toList(),
+                      child: Text('Select All'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          tempSelectedSensors.clear();
+                        });
+                      },
+                      child: Text('Deselect All'),
+                    ),
+                  ],
                 ),
-              );
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: SensorPreferences.allSensors.entries.map((entry) {
+                        return CheckboxListTile(
+                          title: Text(entry.value),
+                          value: tempSelectedSensors.contains(entry.key),
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                tempSelectedSensors.add(entry.key);
+                              } else {
+                                tempSelectedSensors.remove(entry.key);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
             },
           ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('Save'),
-              onPressed: () {
-                setState(() {
-                  _selectedSensors = tempSelectedSensors;
-                });
-                SensorPreferences.setSelectedSensors(_selectedSensors);
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+          TextButton(
+            child: Text('Save'),
+            onPressed: () {
+              setState(() {
+                _selectedSensors = tempSelectedSensors;
+              });
+              SensorPreferences.setSelectedSensors(_selectedSensors);
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
 }
 
