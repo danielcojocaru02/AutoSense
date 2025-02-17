@@ -1,20 +1,56 @@
 import 'dart:async';
-import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'dart:typed_data';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'obd.dart';
 import 'sensor_preferences.dart';
 
 class OBDService {
-  BluetoothConnection? _connection;
-  Obd? _obd;
+  BluetoothDevice? _device;
+  BluetoothCharacteristic? _obdCharacteristic;
   bool _isConnected = false;
   final _dataStreamController = StreamController<Map<String, String>>.broadcast();
 
   Stream<Map<String, String>> get dataStream => _dataStreamController.stream;
 
-  Future<bool> connect(String address) async {
+  // Start scanning for devices
+  Future<void> startScan() async {
+    // Updated for flutter_blue_plus
+    FlutterBluePlus.startScan(timeout: Duration(seconds: 10));
+    FlutterBluePlus.scanResults.listen((results) async {
+      for (ScanResult scanResult in results) {
+        if (scanResult.device.platformName == 'YourDeviceName') {  // Match the device name
+          await connect(scanResult.device);
+          FlutterBluePlus.stopScan(); // Stop scanning once the device is found
+        }
+      }
+    });
+  }
+
+  // Connect to the selected device using Flutter Blue Plus
+  Future<bool> connect(BluetoothDevice device) async {
     try {
-      _connection = await BluetoothConnection.toAddress(address);
-      _obd = Obd(_connection!);
+      _device = device;
+
+      // Connect to the device
+      await _device?.connect();
+
+      // Discover services and characteristics
+      List<BluetoothService> services = await _device!.discoverServices();
+      for (BluetoothService service in services) {
+        // Find the OBD-II characteristic (this depends on your device)
+        for (BluetoothCharacteristic characteristic in service.characteristics) {
+          if (characteristic.uuid.toString() == 'YOUR_CHARACTERISTIC_UUID') {
+            _obdCharacteristic = characteristic;
+            break;
+          }
+        }
+      }
+
+      if (_obdCharacteristic == null) {
+        print('OBD-II characteristic not found');
+        return false;
+      }
+
       _isConnected = true;
       _startReading();
       return true;
@@ -24,12 +60,14 @@ class OBDService {
     }
   }
 
+  // Disconnect from the device
   void disconnect() {
-    _connection?.close();
+    _device?.disconnect();
     _isConnected = false;
     _dataStreamController.close();
   }
 
+  // Start reading data from the OBD-II device
   void _startReading() async {
     while (_isConnected) {
       try {
@@ -39,7 +77,7 @@ class OBDService {
         for (final sensor in selectedSensors) {
           final command = OBDProtocol.commands[sensor];
           if (command != null) {
-            final result = await _obd!.runCommand(command.command);
+            final result = await _runCommand(command.command);
             final value = command.calculator(OBDProtocol.parseOBDResponse(result));
             data[SensorPreferences.allSensors[sensor]!] = value.toString();
           }
@@ -50,6 +88,25 @@ class OBDService {
         print('Error reading OBD data: $e');
       }
       await Future.delayed(Duration(seconds: 1));
+    }
+  }
+
+  // Run a command over Bluetooth
+  Future<String> _runCommand(String command) async {
+    if (_obdCharacteristic == null) {
+      return 'No OBD characteristic found';
+    }
+
+    try {
+      // Send the command to the OBD-II device
+      await _obdCharacteristic!.write(Uint8List.fromList(command.codeUnits));
+
+      // Read the response
+      List<int> response = await _obdCharacteristic!.read();
+      return String.fromCharCodes(response);
+    } catch (e) {
+      print('Error running OBD command: $e');
+      return 'Error';
     }
   }
 }
@@ -67,6 +124,7 @@ class OBDProtocol {
     // Add more commands here
   };
 
+  // Parse OBD-II response
   static List<int> parseOBDResponse(String response) {
     try {
       response = response.replaceAll(RegExp(r'[\r\n\s]'), '');
@@ -98,4 +156,3 @@ class OBDCommand {
 
   String get command => '$mode$pid\r';
 }
-

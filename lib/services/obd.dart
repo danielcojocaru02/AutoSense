@@ -1,29 +1,23 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 class Obd {
-  final BluetoothConnection connection;
-
-  Obd(this.connection);
-
+  final BluetoothCharacteristic obdCharacteristic;
+  
+  Obd(this.obdCharacteristic);
+  
   Future<String> runCommand(String command) async {
     try {
-      connection.output.add(Uint8List.fromList(command.codeUnits));
-      await connection.output.allSent;
-
-      final completer = Completer<String>();
-      connection.input!.listen((Uint8List data) {
-        completer.complete(String.fromCharCodes(data));
-      });
-
-      return completer.future.timeout(Duration(seconds: 2), onTimeout: () {
-        return 'Timeout';
-      });
+      // Convert the command string to a byte array and write it to the characteristic
+      await obdCharacteristic.write(Uint8List.fromList(command.codeUnits));
+      
+      // Wait for the response from the OBD-II device
+      List<int> response = await obdCharacteristic.read();
+      return String.fromCharCodes(response);
     } catch (e) {
       print('Error running OBD command: $e');
       return 'Error';
     }
   }
 }
-
