@@ -1,0 +1,2 @@
+/Users/danielcojocaru/Documents/licenta/auto_app_problems/android/app/.cxx/RelWithDebInfo/6k6e3h5y/x86_64/CMakeFiles/edit_cache.dir
+/Users/danielcojocaru/Documents/licenta/auto_app_problems/android/app/.cxx/RelWithDebInfo/6k6e3h5y/x86_64/CMakeFiles/rebuild_cache.dir
