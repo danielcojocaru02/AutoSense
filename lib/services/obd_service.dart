@@ -1,49 +1,42 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'obd.dart';
 import 'sensor_preferences.dart';
+import 'obd_protocol.dart';
 
 class OBDService {
   BluetoothDevice? _device;
   BluetoothCharacteristic? _obdCharacteristic;
   bool _isConnected = false;
   final _dataStreamController = StreamController<Map<String, String>>.broadcast();
-
+  
   Stream<Map<String, String>> get dataStream => _dataStreamController.stream;
-
-  // Start scanning for devices
-  Future<void> startScan() async {
-    // Updated for flutter_blue_plus
-    FlutterBluePlus.startScan(timeout: Duration(seconds: 10));
-    FlutterBluePlus.scanResults.listen((results) async {
-      for (ScanResult scanResult in results) {
-        if (scanResult.device.platformName == 'YourDeviceName') {  // Match the device name
-          await connect(scanResult.device);
-          FlutterBluePlus.stopScan(); // Stop scanning once the device is found
-        }
-      }
-    });
-  }
 
   // Connect to the selected device using Flutter Blue Plus
   Future<bool> connect(BluetoothDevice device) async {
     try {
       _device = device;
 
-      // Connect to the device
-      await _device?.connect();
+      // Check if already connected
+      if (device.connectionState == BluetoothConnectionState.connected) {
+        print('Already connected to device');
+      } else {
+        // Connect to the device
+        await device.connect(autoConnect: false);
+      }
 
       // Discover services and characteristics
-      List<BluetoothService> services = await _device!.discoverServices();
+      List<BluetoothService> services = await device.discoverServices();
       for (BluetoothService service in services) {
-        // Find the OBD-II characteristic (this depends on your device)
+        // Look for a characteristic that looks like an OBD service
+        // This will depend on your specific OBD adapter
         for (BluetoothCharacteristic characteristic in service.characteristics) {
-          if (characteristic.uuid.toString() == 'YOUR_CHARACTERISTIC_UUID') {
+          if (characteristic.properties.write && characteristic.properties.read) {
             _obdCharacteristic = characteristic;
             break;
           }
         }
+        if (_obdCharacteristic != null) break;
       }
 
       if (_obdCharacteristic == null) {
@@ -62,32 +55,40 @@ class OBDService {
 
   // Disconnect from the device
   void disconnect() {
-    _device?.disconnect();
-    _isConnected = false;
-    _dataStreamController.close();
+    if (_device != null && _isConnected) {
+      _device?.disconnect();
+      _isConnected = false;
+    }
+    if (!_dataStreamController.isClosed) {
+      _dataStreamController.close();
+    }
   }
 
   // Start reading data from the OBD-II device
   void _startReading() async {
-    while (_isConnected) {
-      try {
-        final selectedSensors = await SensorPreferences.getSelectedSensors();
-        final data = <String, String>{};
+    if (!_dataStreamController.isClosed) {
+      while (_isConnected) {
+        try {
+          final selectedSensors = await SensorPreferences.getSelectedSensors();
+          final data = <String, String>{};
 
-        for (final sensor in selectedSensors) {
-          final command = OBDProtocol.commands[sensor];
-          if (command != null) {
-            final result = await _runCommand(command.command);
-            final value = command.calculator(OBDProtocol.parseOBDResponse(result));
-            data[SensorPreferences.allSensors[sensor]!] = value.toString();
+          for (final sensor in selectedSensors) {
+            final command = OBDProtocol.commands[sensor];
+            if (command != null) {
+              final result = await _runCommand(command.command);
+              final value = command.calculator(OBDProtocol.parseOBDResponse(result));
+              data[SensorPreferences.allSensors[sensor]!] = value.toString();
+            }
           }
-        }
 
-        _dataStreamController.add(data);
-      } catch (e) {
-        print('Error reading OBD data: $e');
+          if (!_dataStreamController.isClosed) {
+            _dataStreamController.add(data);
+          }
+        } catch (e) {
+          print('Error reading OBD data: $e');
+        }
+        await Future.delayed(Duration(seconds: 1));
       }
-      await Future.delayed(Duration(seconds: 1));
     }
   }
 
@@ -109,50 +110,4 @@ class OBDService {
       return 'Error';
     }
   }
-}
-
-class OBDProtocol {
-  static final Map<String, OBDCommand> commands = {
-    'ENGINE_RPM': OBDCommand('01', '0C', 'Engine RPM', (List<int> data) {
-      if (data.length < 2) return 0;
-      return ((256 * data[0] + data[1]) / 4).round();
-    }),
-    'VEHICLE_SPEED': OBDCommand('01', '0D', 'Vehicle Speed', (List<int> data) {
-      if (data.isEmpty) return 0;
-      return data[0];
-    }),
-    // Add more commands here
-  };
-
-  // Parse OBD-II response
-  static List<int> parseOBDResponse(String response) {
-    try {
-      response = response.replaceAll(RegExp(r'[\r\n\s]'), '');
-      if (response.contains(':')) {
-        response = response.split(':')[1];
-      }
-      List<int> bytes = [];
-      for (int i = 0; i < response.length; i += 2) {
-        if (i + 2 <= response.length) {
-          String hex = response.substring(i, i + 2);
-          bytes.add(int.parse(hex, radix: 16));
-        }
-      }
-      return bytes;
-    } catch (e) {
-      print('Error parsing OBD response: $e');
-      return [];
-    }
-  }
-}
-
-class OBDCommand {
-  final String mode;
-  final String pid;
-  final String name;
-  final Function(List<int>) calculator;
-
-  OBDCommand(this.mode, this.pid, this.name, this.calculator);
-
-  String get command => '$mode$pid\r';
 }
