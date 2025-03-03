@@ -6,45 +6,40 @@ import 'obd_protocol.dart';
 
 class OBDService {
   BluetoothDevice? _device;
-  BluetoothCharacteristic? _obdCharacteristic;
+  BluetoothCharacteristic? _writeCharacteristic;
+  BluetoothCharacteristic? _readCharacteristic;
   bool _isConnected = false;
   final _dataStreamController = StreamController<Map<String, String>>.broadcast();
   
   Stream<Map<String, String>> get dataStream => _dataStreamController.stream;
 
-  // Connect to the selected device using Flutter Blue Plus
   Future<bool> connect(BluetoothDevice device) async {
     try {
       _device = device;
-
-      // Check if already connected
-      if (device.connectionState == BluetoothConnectionState.connected) {
-        print('Already connected to device');
-      } else {
-        // Connect to the device
-        await device.connect(autoConnect: false);
-      }
-
-      // Discover services and characteristics
+      await device.connect(autoConnect: false);
       List<BluetoothService> services = await device.discoverServices();
       for (BluetoothService service in services) {
-        // Look for a characteristic that looks like an OBD service
-        // This will depend on your specific OBD adapter
         for (BluetoothCharacteristic characteristic in service.characteristics) {
-          if (characteristic.properties.write && characteristic.properties.read) {
-            _obdCharacteristic = characteristic;
+          if (characteristic.properties.write) {
+            _writeCharacteristic = characteristic;
+          }
+          if (characteristic.properties.read || characteristic.properties.notify) {
+            _readCharacteristic = characteristic;
+          }
+          if (_writeCharacteristic != null && _readCharacteristic != null) {
             break;
           }
         }
-        if (_obdCharacteristic != null) break;
+        if (_writeCharacteristic != null && _readCharacteristic != null) break;
       }
 
-      if (_obdCharacteristic == null) {
-        print('OBD-II characteristic not found');
+      if (_writeCharacteristic == null || _readCharacteristic == null) {
+        print('MM32I073 characteristics not found');
         return false;
       }
 
       _isConnected = true;
+      await _initializeDevice();
       _startReading();
       return true;
     } catch (e) {
@@ -53,18 +48,35 @@ class OBDService {
     }
   }
 
-  // Disconnect from the device
-  void disconnect() {
-    if (_device != null && _isConnected) {
-      _device?.disconnect();
-      _isConnected = false;
+  Future<void> _initializeDevice() async {
+    print('Initializing MM32I073 device...');
+    // Add any necessary initialization commands for the MM32I073
+    await _sendCommand('INIT');
+    print('MM32I073 device initialized');
+  }
+
+  Future<String> _sendCommand(String command) async {
+    if (_writeCharacteristic == null || _readCharacteristic == null) {
+      print('MM32I073 characteristics not found');
+      return 'MM32I073 characteristics not found';
     }
-    if (!_dataStreamController.isClosed) {
-      _dataStreamController.close();
+
+    try {
+      print('Sending command: $command');
+      await _writeCharacteristic!.write(Uint8List.fromList(command.codeUnits));
+      await Future.delayed(Duration(milliseconds: 100));
+
+      List<int> response = await _readCharacteristic!.read();
+      String responseStr = String.fromCharCodes(response).trim();
+      print('Received response: $responseStr');
+
+      return responseStr;
+    } catch (e) {
+      print('Error running MM32I073 command: $e');
+      return 'Error';
     }
   }
 
-  // Start reading data from the OBD-II device
   void _startReading() async {
     if (!_dataStreamController.isClosed) {
       while (_isConnected) {
@@ -75,9 +87,16 @@ class OBDService {
           for (final sensor in selectedSensors) {
             final command = OBDProtocol.commands[sensor];
             if (command != null) {
-              final result = await _runCommand(command.command);
-              final value = command.calculator(OBDProtocol.parseOBDResponse(result));
-              data[SensorPreferences.allSensors[sensor]!] = value.toString();
+              print('Requesting ${command.name}');
+              final result = await _sendCommand(command.command);
+              print('Raw result for ${command.name}: $result');
+              if (result != 'Error') {
+                final value = command.calculator(result);
+                data[SensorPreferences.allSensors[sensor]!] = value.toString();
+                print('Calculated value for ${command.name}: $value');
+              } else {
+                data[SensorPreferences.allSensors[sensor]!] = 'N/A';
+              }
             }
           }
 
@@ -85,29 +104,22 @@ class OBDService {
             _dataStreamController.add(data);
           }
         } catch (e) {
-          print('Error reading OBD data: $e');
+          print('Error reading MM32I073 data: $e');
         }
-        await Future.delayed(Duration(seconds: 1));
+        await Future.delayed(Duration(milliseconds: 100));
       }
     }
   }
+  
 
-  // Run a command over Bluetooth
-  Future<String> _runCommand(String command) async {
-    if (_obdCharacteristic == null) {
-      return 'No OBD characteristic found';
+  void disconnect() {
+    if (_device != null && _isConnected) {
+      _device?.disconnect();
+      _isConnected = false;
     }
-
-    try {
-      // Send the command to the OBD-II device
-      await _obdCharacteristic!.write(Uint8List.fromList(command.codeUnits));
-
-      // Read the response
-      List<int> response = await _obdCharacteristic!.read();
-      return String.fromCharCodes(response);
-    } catch (e) {
-      print('Error running OBD command: $e');
-      return 'Error';
+    if (!_dataStreamController.isClosed) {
+      _dataStreamController.close();
     }
   }
 }
+

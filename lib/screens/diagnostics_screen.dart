@@ -26,13 +26,14 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     _loadSelectedSensors();
     _initializeBluetooth();
   }
-   Future<void> _disconnect() async {
+
+  Future<void> _disconnect() async {
     try {
-       _obdService.disconnect();
+      _obdService.disconnect();
       setState(() {
         _isConnected = false;
         _connectionStatus = 'Disconnected';
-        _diagnosticData.clear(); // Clear the old data
+        _diagnosticData.clear();
       });
     } catch (e) {
       setState(() {
@@ -314,29 +315,34 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Icon(
-                _isConnected 
-                    ? Icons.bluetooth_connected 
-                    : Icons.bluetooth_disabled,
-                color: _isConnected 
-                    ? const Color(0xFFF97316) 
-                    : Colors.grey,
-              ),
-              const SizedBox(width: 16),
-              Flexible(
-                child: Text(
-                  _connectionStatus,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isConnected 
+                      ? Icons.bluetooth_connected 
+                      : Icons.bluetooth_disabled,
+                  color: _isConnected 
+                      ? const Color(0xFFF97316) 
+                      : Colors.grey,
+                ),
+                const SizedBox(width: 16),
+                Flexible(
+                  child: Text(
+                    _connectionStatus,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           if (_isConnected)
             TextButton(
@@ -353,8 +359,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     );
   }
 
-
-   Widget _buildConnectButton() {
+  Widget _buildConnectButton() {
     return ElevatedButton(
       onPressed: _isConnected ? null : _connectToOBD,
       style: ElevatedButton.styleFrom(
@@ -556,10 +561,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     );
   }
 
-@override
+  @override
   void dispose() {
     _disconnect();
     _bluetoothStateSubscription?.cancel();
     super.dispose();
   }
 }
+
