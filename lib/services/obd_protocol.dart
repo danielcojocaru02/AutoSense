@@ -1,65 +1,66 @@
 class OBDCommand {
-  final String pid;
-  final String mode;
+  final String command;
   final String name;
-  final Function(List<int>) calculator;
+  final Function(String) calculator;
 
-  OBDCommand(this.mode, this.pid, this.name, this.calculator);
-
-  String get command => mode + pid + '\r';
+  OBDCommand(this.command, this.name, this.calculator);
 }
 
 class OBDProtocol {
   static final commands = {
-    'ENGINE_RPM': OBDCommand('01', '0C', 'Engine RPM', (List<int> data) {
-      if (data.length < 2) return 0;
-      return ((256 * data[0] + data[1]) / 4).round();
+    'ENGINE_RPM': OBDCommand('RPM', 'Engine RPM', (String data) {
+      try {
+        return double.parse(data).round();
+      } catch (e) {
+        print('Error parsing RPM data: $e');
+        return 0;
+      }
     }),
-    'VEHICLE_SPEED': OBDCommand('01', '0D', 'Vehicle Speed', (List<int> data) {
-      if (data.isEmpty) return 0;
-      return data[0];
+
+    'COOLANT_TEMP': OBDCommand('TEMP', 'Coolant Temperature', (String data) {
+      try {
+        return double.parse(data).round();
+      } catch (e) {
+        print('Error parsing coolant temperature data: $e');
+        return 0;
+      }
     }),
-    'COOLANT_TEMP': OBDCommand('01', '05', 'Coolant Temperature', (List<int> data) {
-      if (data.isEmpty) return 0;
-      return data[0] - 40;
+
+    'VEHICLE_SPEED': OBDCommand('SPEED', 'Vehicle Speed', (String data) {
+      try {
+        return double.parse(data).round();
+      } catch (e) {
+        print('Error parsing vehicle speed data: $e');
+        return 0;
+      }
     }),
-    'INTAKE_PRESSURE': OBDCommand('01', '0B', 'Intake Pressure', (List<int> data) {
-      if (data.isEmpty) return 0;
-      return data[0];
+
+    'INTAKE_PRESSURE': OBDCommand('INTAKE', 'Intake Pressure', (String data) {
+      try {
+        return double.parse(data).round();
+      } catch (e) {
+        print('Error parsing intake pressure data: $e');
+        return 0;
+      }
     }),
-    'MAF_SENSOR': OBDCommand('01', '10', 'MAF Sensor', (List<int> data) {
-      if (data.length < 2) return 0;
-      return ((256 * data[0] + data[1]) / 100).round();
+
+    'MAF_SENSOR': OBDCommand('MAF', 'MAF Sensor', (String data) {
+      try {
+        return double.parse(data);
+      } catch (e) {
+        print('Error parsing MAF sensor data: $e');
+        return 0;
+      }
     }),
-    'O2_VOLTAGE': OBDCommand('01', '14', 'O2 Voltage', (List<int> data) {
-      if (data.isEmpty) return 0;
-      return data[0] / 200;
+
+    'O2_VOLTAGE': OBDCommand('O2', 'O2 Voltage', (String data) {
+      try {
+        return double.parse(data);
+      } catch (e) {
+        print('Error parsing O2 voltage data: $e');
+        return 0;
+      }
     }),
   };
-
-  static List<int> parseOBDResponse(String response) {
-    try {
-      // Remove spaces and line endings
-      response = response.replaceAll(RegExp(r'[\r\n\s]'), '');
-      
-      // Remove echo of the command if present (everything before the ':')
-      if (response.contains(':')) {
-        response = response.split(':')[1];
-      }
-
-      // Convert hex string to bytes
-      List<int> bytes = [];
-      for (int i = 0; i < response.length; i += 2) {
-        if (i + 2 <= response.length) {
-          String hex = response.substring(i, i + 2);
-          bytes.add(int.parse(hex, radix: 16));
-        }
-      }
-      return bytes;
-    } catch (e) {
-      print('Error parsing OBD response: $e');
-      return [];
-    }
-  }
 }
 
