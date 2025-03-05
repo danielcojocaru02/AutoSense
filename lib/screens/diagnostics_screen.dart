@@ -199,7 +199,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
       setState(() {
         _isConnected = success;
         _connectionStatus = success 
-            ? 'Connected to ${device.platformName}'
+            ? 'Connected to ${device.platformName} (${_obdService.isStandardOBD ? 'Standard OBD-II' : 'Custom Protocol'})'
             : 'Connection failed';
       });
 
