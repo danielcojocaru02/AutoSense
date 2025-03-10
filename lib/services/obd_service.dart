@@ -27,7 +27,7 @@ class OBDService {
       _isInitializing = true;
       
       // Wait a bit for the adapter to initialize fully
-      await Future.delayed(Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 3));
       
       // Start refreshing data
       _startRefreshingData();
@@ -41,7 +41,7 @@ class OBDService {
     _refreshTimer?.cancel();
     
     // Start a new timer
-    _refreshTimer = Timer.periodic(Duration(seconds: 3), (timer) async {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       if (_adapter == null || !_adapter!.isConnected) {
         timer.cancel();
         return;

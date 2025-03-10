@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'car_storage.dart'; // Import the car storage file
 
 class DashboardScreen extends StatefulWidget {
   final String? carMake;
@@ -10,14 +12,14 @@ class DashboardScreen extends StatefulWidget {
   final String? carPower;
 
   const DashboardScreen({
-    Key? key,
+    super.key,
     this.carMake,
     this.carModel,
     this.carYear,
     this.carEngine,
     this.carTransmission,
     this.carPower,
-  }) : super(key: key);
+  });
 
   @override
   _DashboardScreenState createState() => _DashboardScreenState();
@@ -28,10 +30,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int? _lastOilChangeMileage;
   int? _oilChangeInterval;
   int? _currentMileage;
+  
+  // Add car data properties
+  String? _carMake;
+  String? _carModel;
+  String? _carYear;
+  String? _carEngine;
+  String? _carTransmission;
+  String? _carPower;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedData();
+    _loadCarData();
+  }
+  
+  // Load car data from storage
+  Future<void> _loadCarData() async {
+    // First check if we have car data passed as parameters
+    if (widget.carMake != null && widget.carModel != null) {
+      setState(() {
+        _carMake = widget.carMake;
+        _carModel = widget.carModel;
+        _carYear = widget.carYear;
+        _carEngine = widget.carEngine;
+        _carTransmission = widget.carTransmission;
+        _carPower = widget.carPower;
+      });
+      
+      // Save the car data that was passed in
+      final car = Car(
+        make: widget.carMake!,
+        model: widget.carModel!,
+        year: widget.carYear ?? '',
+        engine: widget.carEngine ?? '',
+        transmission: widget.carTransmission ?? '',
+        power: widget.carPower ?? '',
+      );
+      await CarStorage.saveCar(car);
+    } else {
+      // If no car data was passed, try to load from storage
+      final car = await CarStorage.loadCar();
+      if (car != null) {
+        setState(() {
+          _carMake = car.make;
+          _carModel = car.model;
+          _carYear = car.year;
+          _carEngine = car.engine;
+          _carTransmission = car.transmission;
+          _carPower = car.power;
+        });
+      }
+    }
+  }
+  
+  // Load data from SharedPreferences
+  Future<void> _loadSavedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    setState(() {
+      // Load last oil change date
+      final lastOilChangeMillis = prefs.getInt('lastOilChangeMillis');
+      _lastOilChange = lastOilChangeMillis != null 
+          ? DateTime.fromMillisecondsSinceEpoch(lastOilChangeMillis) 
+          : null;
+      
+      // Load mileage data
+      _lastOilChangeMileage = prefs.getInt('lastOilChangeMileage');
+      _oilChangeInterval = prefs.getInt('oilChangeInterval');
+      _currentMileage = prefs.getInt('currentMileage');
+    });
+  }
+  
+  // Save data to SharedPreferences
+  Future<void> _saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Save last oil change date
+    if (_lastOilChange != null) {
+      await prefs.setInt('lastOilChangeMillis', _lastOilChange!.millisecondsSinceEpoch);
+    }
+    
+    // Save mileage data
+    if (_lastOilChangeMileage != null) {
+      await prefs.setInt('lastOilChangeMileage', _lastOilChangeMileage!);
+    }
+    
+    if (_oilChangeInterval != null) {
+      await prefs.setInt('oilChangeInterval', _oilChangeInterval!);
+    }
+    
+    if (_currentMileage != null) {
+      await prefs.setInt('currentMileage', _currentMileage!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF18181B),
       appBar: AppBar(
         title: const Text('Dashboard'),
         backgroundColor: const Color(0xFF18181B),
@@ -66,6 +164,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildCarInfoCard() {
+    // Use the stored car data instead of widget parameters
+    final carMake = _carMake ?? widget.carMake;
+    final carModel = _carModel ?? widget.carModel;
+    final carYear = _carYear ?? widget.carYear;
+    final carEngine = _carEngine ?? widget.carEngine;
+    final carTransmission = _carTransmission ?? widget.carTransmission;
+    final carPower = _carPower ?? widget.carPower;
+    
+    // If no car data is available, show a placeholder
+    if (carMake == null || carModel == null) {
+      return Container(
+        margin: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: const Color(0xFF3A3A3C),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Center(
+            child: Text(
+              'No car information available',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                  ),
+            ),
+          ),
+        ),
+      );
+    }
+    
     return Container(
       margin: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -89,16 +217,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${widget.carYear ?? ''} ${widget.carMake ?? ''} ${widget.carModel ?? ''}',
+              '${carYear ?? ''} ${carMake ?? ''} ${carModel ?? ''}',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 16),
-            _buildInfoRow('Engine', widget.carEngine),
-            _buildInfoRow('Transmission', widget.carTransmission),
-            _buildInfoRow('Power', widget.carPower),
+            _buildInfoRow('Engine', carEngine),
+            _buildInfoRow('Transmission', carTransmission),
+            _buildInfoRow('Power', carPower),
           ],
         ),
       ),
@@ -136,25 +264,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _buildDatePicker(
               label: 'Last Oil Change',
               value: _lastOilChange,
-              onChanged: (date) => setState(() => _lastOilChange = date),
+              onChanged: (date) {
+                setState(() => _lastOilChange = date);
+                _saveData(); // Save when value changes
+              },
             ),
             const SizedBox(height: 16),
             _buildNumberInput(
               label: 'Last Oil Change Mileage',
               value: _lastOilChangeMileage,
-              onChanged: (value) => setState(() => _lastOilChangeMileage = value),
+              onChanged: (value) {
+                setState(() => _lastOilChangeMileage = value);
+                _saveData(); // Save when value changes
+              },
             ),
             const SizedBox(height: 16),
             _buildNumberInput(
               label: 'Oil Change Interval (miles)',
               value: _oilChangeInterval,
-              onChanged: (value) => setState(() => _oilChangeInterval = value),
+              onChanged: (value) {
+                setState(() => _oilChangeInterval = value);
+                _saveData(); // Save when value changes
+              },
             ),
             const SizedBox(height: 16),
             _buildNumberInput(
               label: 'Current Mileage',
               value: _currentMileage,
-              onChanged: (value) => setState(() => _currentMileage = value),
+              onChanged: (value) {
+                setState(() => _currentMileage = value);
+                _saveData(); // Save when value changes
+              },
             ),
           ],
         ),
@@ -178,6 +318,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
               initialDate: value ?? DateTime.now(),
               firstDate: DateTime(2000),
               lastDate: DateTime.now(),
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.dark(
+                      primary: Color(0xFFF97316),
+                      onPrimary: Colors.white,
+                      surface: Color(0xFF27272A),
+                      onSurface: Colors.white,
+                    ),
+                    dialogBackgroundColor: const Color(0xFF18181B),
+                  ),
+                  child: child!,
+                );
+              },
             );
             if (date != null) {
               onChanged(date);
@@ -187,7 +341,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             value != null
                 ? DateFormat('MMM d, yyyy').format(value)
                 : 'Select Date',
-            style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+            style: const TextStyle(color: Color(0xFFF97316)),
           ),
         ),
       ],
@@ -199,6 +353,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required int? value,
     required ValueChanged<int?> onChanged,
   }) {
+    final controller = TextEditingController(text: value?.toString() ?? '');
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -206,6 +362,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SizedBox(
           width: 100,
           child: TextField(
+            controller: controller,
             keyboardType: TextInputType.number,
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
@@ -215,9 +372,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.grey),
               ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFF97316)),
+              ),
             ),
-            onChanged: (text) => onChanged(int.tryParse(text)),
-            controller: TextEditingController(text: value?.toString() ?? ''),
+            onChanged: (text) {
+              final value = int.tryParse(text);
+              onChanged(value);
+            },
           ),
         ),
       ],
@@ -225,52 +387,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildMaintenanceStatus() {
-  if (_lastOilChange == null || _oilChangeInterval == null || _currentMileage == null) {
-    return const SizedBox(); // Avoid showing incomplete info
-  }
+    if (_lastOilChange == null || _oilChangeInterval == null || _currentMileage == null) {
+      return const SizedBox(); // Avoid showing incomplete info
+    }
 
-  // User inputs
-  int lastOilChangeMileage = _lastOilChangeMileage ?? 0;
-  int oilChangeInterval = _oilChangeInterval ?? 0;
-  int currentMileage = _currentMileage ?? 0;
+    // User inputs
+    int lastOilChangeMileage = _lastOilChangeMileage ?? 0;
+    int oilChangeInterval = _oilChangeInterval ?? 0;
+    int currentMileage = _currentMileage ?? 0;
 
-  // Next oil change mileage
-  int nextOilChangeMileage = lastOilChangeMileage + oilChangeInterval;
-  int milesUntilNextChange = nextOilChangeMileage - currentMileage;
+    // Next oil change mileage
+    int nextOilChangeMileage = lastOilChangeMileage + oilChangeInterval;
+    int milesUntilNextChange = nextOilChangeMileage - currentMileage;
 
-  // Next oil change date (1 year after last oil change)
-  DateTime nextOilChangeDate = _lastOilChange!.add(const Duration(days: 365));
-  int daysUntilNextChange = nextOilChangeDate.difference(DateTime.now()).inDays;
+    // Next oil change date (1 year after last oil change)
+    DateTime nextOilChangeDate = _lastOilChange!.add(const Duration(days: 365));
+    int daysUntilNextChange = nextOilChangeDate.difference(DateTime.now()).inDays;
 
-  return Card(
-    margin: const EdgeInsets.all(16.0),
-    color: const Color(0xFF2C2C2E),
-    child: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Maintenance Status',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 16),
-          _buildStatusRow('Last Oil Change Mileage', '$lastOilChangeMileage miles'),
-          _buildStatusRow('Next Oil Change Mileage', '$nextOilChangeMileage miles'),
-          _buildStatusRow('Miles Until Next Change', '$milesUntilNextChange miles'),
-          _buildStatusRow('Next Oil Change Date', DateFormat('MMM d, yyyy').format(nextOilChangeDate)),
-          _buildStatusRow('Days Until Next Change', '$daysUntilNextChange days'),
-        ],
+    return Card(
+      margin: const EdgeInsets.all(16.0),
+      color: const Color(0xFF2C2C2E),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Maintenance Status',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            _buildStatusRow('Last Oil Change Mileage', '$lastOilChangeMileage miles'),
+            _buildStatusRow('Next Oil Change Mileage', '$nextOilChangeMileage miles'),
+            _buildStatusRow('Miles Until Next Change', '$milesUntilNextChange miles'),
+            _buildStatusRow('Next Oil Change Date', DateFormat('MMM d, yyyy').format(nextOilChangeDate)),
+            _buildStatusRow('Days Until Next Change', '$daysUntilNextChange days'),
+          ],
+        ),
       ),
-    ),
-  );
-}
-
-
-
+    );
+  }
 
   Widget _buildStatusRow(String label, String value) {
     return Padding(
@@ -285,4 +444,3 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
-

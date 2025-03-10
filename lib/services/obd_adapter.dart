@@ -223,7 +223,7 @@ class OBDAdapter {
     _responseBuffer.add(responsePart);
     
     // Start a timer to collect all parts of the response
-    _responseTimer = Timer(Duration(milliseconds: 200), () {
+    _responseTimer = Timer(const Duration(milliseconds: 200), () {
       if (_currentResponseCompleter != null && !_currentResponseCompleter!.isCompleted) {
         // Join all parts of the response
         String fullResponse = _responseBuffer.join(' ');
@@ -245,7 +245,7 @@ class OBDAdapter {
       print('Initializing adapter...');
       
       // Reset the adapter
-      String response = await sendRawCommand('ATZ', timeout: Duration(seconds: 3));
+      String response = await sendRawCommand('ATZ', timeout: const Duration(seconds: 3));
       print('Reset response: $response');
       
       if (response.contains('ELM') || response.contains('elm')) {
@@ -305,7 +305,7 @@ class OBDAdapter {
       return 'Error: Not connected';
     }
     
-    timeout ??= Duration(milliseconds: 1500);
+    timeout ??= const Duration(milliseconds: 1500);
     
     try {
       // Clear any pending data
@@ -343,7 +343,7 @@ class OBDAdapter {
       // Otherwise, use polling to read the response
       else {
         // Wait a bit for the device to process
-        await Future.delayed(Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 500));
         
         // Read the response
         List<int> response = await _readCharacteristic!.read();
@@ -352,14 +352,14 @@ class OBDAdapter {
         
         // If we got back the command we sent, it's an echo - try reading again
         if (responseStr.startsWith(command.split('\r')[0]) || responseStr.isEmpty) {
-          await Future.delayed(Duration(milliseconds: 500));
+          await Future.delayed(const Duration(milliseconds: 500));
           response = await _readCharacteristic!.read();
           responseStr = String.fromCharCodes(response).trim();
           print('Second read response: $responseStr');
           
           // Try one more time with a longer delay
           if (responseStr.isEmpty || responseStr.startsWith(command.split('\r')[0])) {
-            await Future.delayed(Duration(milliseconds: 1000));
+            await Future.delayed(const Duration(milliseconds: 1000));
             response = await _readCharacteristic!.read();
             responseStr = String.fromCharCodes(response).trim();
             print('Third read response: $responseStr');
@@ -383,12 +383,12 @@ class OBDAdapter {
       print('Received echo or empty response, trying with explicit CR and longer timeout');
       
       // Try with explicit CR and longer timeout
-      response = await sendRawCommand('$command\r', timeout: Duration(milliseconds: 2000));
+      response = await sendRawCommand('$command\r', timeout: const Duration(milliseconds: 2000));
       
       // If still getting echo, try with CRLF
       if (response.startsWith(command.split(' ')[0]) || response.isEmpty) {
         print('Still receiving echo, trying with CRLF');
-        response = await sendRawCommand('$command\r\n', timeout: Duration(milliseconds: 2000));
+        response = await sendRawCommand('$command\r\n', timeout: const Duration(milliseconds: 2000));
       }
     }
     
@@ -427,7 +427,7 @@ class OBDAdapter {
           response.contains('?') || response == 'Timeout') {
         print('Invalid response for $sensorKey: $response, attempt ${i+1}/3');
         if (i == 2) return 'N/A'; // Give up after 3 attempts
-        await Future.delayed(Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 500));
         continue;
       }
       
@@ -435,7 +435,7 @@ class OBDAdapter {
       if (response.startsWith(command.command.split(' ')[0])) {
         print('Received command echo for $sensorKey, attempt ${i+1}/3');
         if (i == 2) return 'N/A'; // Give up after 3 attempts
-        await Future.delayed(Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 500));
         continue;
       }
       

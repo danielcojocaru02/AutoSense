@@ -12,14 +12,14 @@ class MainScreen extends StatefulWidget {
   final String? carPower;
 
   const MainScreen({
-    Key? key,
+    super.key,
     this.carMake,
     this.carModel,
     this.carYear,
     this.carEngine,
     this.carTransmission,
     this.carPower,
-  }) : super(key: key);
+  });
 
   @override
   _MainScreenState createState() => _MainScreenState();
