@@ -15,7 +15,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
     <application
-        android:label="auto_app_problems"
+        android:label="AutoSense"
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/NormalTheme">
         
