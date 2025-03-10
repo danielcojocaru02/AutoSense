@@ -353,6 +353,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required int? value,
     required ValueChanged<int?> onChanged,
   }) {
+    // Create a controller with the initial value
     final controller = TextEditingController(text: value?.toString() ?? '');
     
     return Row(
@@ -361,24 +362,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(label, style: const TextStyle(color: Colors.white)),
         SizedBox(
           width: 100,
-          child: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              border: OutlineInputBorder(),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey),
+          child: Focus(
+            // Wrap TextField with Focus widget to help maintain focus
+            child: TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                border: OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFFF97316)),
+                ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFFF97316)),
-              ),
+              // Use onSubmitted instead of onChanged to avoid losing focus while typing
+              onSubmitted: (text) {
+                final value = int.tryParse(text);
+                onChanged(value);
+              },
+              // Add this to save when focus is lost
+              onEditingComplete: () {
+                final value = int.tryParse(controller.text);
+                onChanged(value);
+                FocusScope.of(context).nextFocus();
+              },
+              textInputAction: TextInputAction.next,
             ),
-            onChanged: (text) {
-              final value = int.tryParse(text);
-              onChanged(value);
+            onFocusChange: (hasFocus) {
+              // Only update the value when the field loses focus
+              if (!hasFocus) {
+                final value = int.tryParse(controller.text);
+                onChanged(value);
+              }
             },
           ),
         ),

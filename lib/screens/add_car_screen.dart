@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'main_screen.dart';
+import 'car_storage.dart'; // Import the car storage file
 
 class AddCarScreen extends StatefulWidget {
   const AddCarScreen({super.key});
@@ -110,18 +111,34 @@ class _AddCarScreenState extends State<AddCarScreen> {
         _selectedEngine != null &&
         _selectedTransmission != null &&
         _selectedPower != null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => MainScreen(
-            carMake: _selectedMake!,
-            carModel: _selectedModel!,
-            carYear: _selectedYear!,
-            carEngine: _selectedEngine!,
-            carTransmission: _selectedTransmission!,
-            carPower: _selectedPower!,
-          ),
-        ),
+      
+      // Create a Car object
+      final car = Car(
+        make: _selectedMake!,
+        model: _selectedModel!,
+        year: _selectedYear!,
+        engine: _selectedEngine!,
+        transmission: _selectedTransmission!,
+        power: _selectedPower!,
       );
+      
+      // Save the car data
+      CarStorage.saveCar(car).then((_) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => MainScreen(
+              carMake: _selectedMake!,
+              carModel: _selectedModel!,
+              carYear: _selectedYear!,
+              carEngine: _selectedEngine!,
+              carTransmission: _selectedTransmission!,
+              carPower: _selectedPower!,
+            ),
+          ),
+        );
+      }).catchError((error) {
+        _showErrorSnackBar('Failed to save car data: $error');
+      });
     } else {
       _showErrorSnackBar('Please complete all selections');
     }
@@ -135,7 +152,9 @@ class _AddCarScreenState extends State<AddCarScreen> {
         backgroundColor: const Color(0xFF18181B),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(
+              color: Color(0xFFF97316),
+            ))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -155,7 +174,18 @@ class _AddCarScreenState extends State<AddCarScreen> {
                       });
                       if (value != null) _loadModels(value);
                     },
-                    decoration: const InputDecoration(labelText: 'Car Make'),
+                    decoration: const InputDecoration(
+                      labelText: 'Car Make',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFF97316)),
+                      ),
+                    ),
+                    dropdownColor: const Color(0xFF27272A),
+                    style: const TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
@@ -173,7 +203,18 @@ class _AddCarScreenState extends State<AddCarScreen> {
                             });
                             if (value != null) _loadYears(_selectedMake!, value);
                           },
-                    decoration: const InputDecoration(labelText: 'Car Model'),
+                    decoration: const InputDecoration(
+                      labelText: 'Car Model',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFF97316)),
+                      ),
+                    ),
+                    dropdownColor: const Color(0xFF27272A),
+                    style: const TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
@@ -189,7 +230,18 @@ class _AddCarScreenState extends State<AddCarScreen> {
                               _selectedPower = null;
                             });
                           },
-                    decoration: const InputDecoration(labelText: 'Car Year'),
+                    decoration: const InputDecoration(
+                      labelText: 'Car Year',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFF97316)),
+                      ),
+                    ),
+                    dropdownColor: const Color(0xFF27272A),
+                    style: const TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
@@ -204,7 +256,18 @@ class _AddCarScreenState extends State<AddCarScreen> {
                               _selectedPower = null;
                             });
                           },
-                    decoration: const InputDecoration(labelText: 'Engine'),
+                    decoration: const InputDecoration(
+                      labelText: 'Engine',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFF97316)),
+                      ),
+                    ),
+                    dropdownColor: const Color(0xFF27272A),
+                    style: const TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
@@ -218,7 +281,18 @@ class _AddCarScreenState extends State<AddCarScreen> {
                               _selectedPower = null;
                             });
                           },
-                    decoration: const InputDecoration(labelText: 'Transmission'),
+                    decoration: const InputDecoration(
+                      labelText: 'Transmission',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFF97316)),
+                      ),
+                    ),
+                    dropdownColor: const Color(0xFF27272A),
+                    style: const TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
@@ -231,12 +305,37 @@ class _AddCarScreenState extends State<AddCarScreen> {
                               _selectedPower = value;
                             });
                           },
-                    decoration: const InputDecoration(labelText: 'Power'),
+                    decoration: const InputDecoration(
+                      labelText: 'Power',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFF97316)),
+                      ),
+                    ),
+                    dropdownColor: const Color(0xFF27272A),
+                    style: const TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: _submitForm,
-                    child: const Text('Add Car'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF97316),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Add Car',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -244,4 +343,3 @@ class _AddCarScreenState extends State<AddCarScreen> {
     );
   }
 }
-
