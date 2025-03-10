@@ -7,7 +7,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class DiagnosticsScreen extends StatefulWidget {
-  const DiagnosticsScreen({Key? key}) : super(key: key);
+  const DiagnosticsScreen({super.key});
   @override
   _DiagnosticsScreenState createState() => _DiagnosticsScreenState();
 }
@@ -124,7 +124,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     List<ScanResult> deviceList = [];
     
     try {
-      await FlutterBluePlus.startScan(timeout: Duration(seconds: 10));
+      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
     } catch (e) {
       throw Exception('Failed to start scan: $e');
     }
@@ -143,9 +143,9 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
 
             return AlertDialog(
               backgroundColor: const Color(0xFF27272A),
-              title: Text('Select OBD Device', 
+              title: const Text('Select OBD Device', 
                 style: TextStyle(color: Colors.white)),
-              content: Container(
+              content: SizedBox(
                 height: 300,
                 width: double.maxFinite,
                 child: ListView.builder(
@@ -157,9 +157,9 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                         : 'Unknown device';
                     return ListTile(
                       title: Text(deviceName, 
-                        style: TextStyle(color: Colors.white)),
+                        style: const TextStyle(color: Colors.white)),
                       subtitle: Text(result.device.remoteId.str,
-                        style: TextStyle(color: Colors.grey)),
+                        style: const TextStyle(color: Colors.grey)),
                       onTap: () async {
                         await FlutterBluePlus.stopScan();
                         Navigator.pop(context);
@@ -171,8 +171,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: Text('Cancel', 
-                    style: TextStyle(color: const Color(0xFFF97316))),
+                  child: const Text('Cancel', 
+                    style: TextStyle(color: Color(0xFFF97316))),
                   onPressed: () {
                     FlutterBluePlus.stopScan();
                     Navigator.pop(context);
@@ -242,7 +242,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'Diagnostics',
                     style: TextStyle(
                       color: Colors.white,
@@ -271,10 +271,10 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
 
   Widget _buildConnectionMenu() {
     return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert, color: Colors.white),
+      icon: const Icon(Icons.more_vert, color: Colors.white),
       color: const Color(0xFF27272A),
       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        PopupMenuItem<String>(
+        const PopupMenuItem<String>(
           value: 'disconnect',
           child: Row(
             children: [
@@ -284,7 +284,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
             ],
           ),
         ),
-        PopupMenuItem<String>(
+        const PopupMenuItem<String>(
           value: 'reconnect',
           child: Row(
             children: [
@@ -334,7 +334,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                 Flexible(
                   child: Text(
                     _connectionStatus,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                     ),
@@ -347,10 +347,10 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           if (_isConnected)
             TextButton(
               onPressed: _disconnect,
-              child: Text(
+              child: const Text(
                 'Disconnect',
                 style: TextStyle(
-                  color: const Color(0xFFF97316),
+                  color: Color(0xFFF97316),
                 ),
               ),
             ),
@@ -386,7 +386,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
               _isConnected 
                   ? 'Connected' 
                   : 'Connect to OBD-II',
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -408,7 +408,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      child: Center(
+      child: const Center(
         child: Text(
           'Select Sensors',
           style: TextStyle(
@@ -423,7 +423,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
 
   Widget _buildDiagnosticInfo() {
     return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 1.5,
         crossAxisSpacing: 16,
@@ -453,7 +453,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
               const SizedBox(height: 8),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -475,11 +475,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF27272A),
-          title: Text('Select Sensors',
+          title: const Text('Select Sensors',
             style: TextStyle(color: Colors.white)),
           content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
-              return Container(
+              return SizedBox(
                 width: double.maxFinite,
                 height: 400,
                 child: Column(
@@ -495,8 +495,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                                 SensorPreferences.allSensors.keys.toList();
                             });
                           },
-                          child: Text('Select All',
-                            style: TextStyle(color: const Color(0xFFF97316))),
+                          child: const Text('Select All',
+                            style: TextStyle(color: Color(0xFFF97316))),
                         ),
                         TextButton(
                           onPressed: () {
@@ -504,8 +504,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                               tempSelectedSensors.clear();
                             });
                           },
-                          child: Text('Deselect All',
-                            style: TextStyle(color: const Color(0xFFF97316))),
+                          child: const Text('Deselect All',
+                            style: TextStyle(color: Color(0xFFF97316))),
                         ),
                       ],
                     ),
@@ -514,7 +514,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                         children: SensorPreferences.allSensors.entries.map((entry) {
                           return CheckboxListTile(
                             title: Text(entry.value,
-                              style: TextStyle(color: Colors.white)),
+                              style: const TextStyle(color: Colors.white)),
                             value: tempSelectedSensors.contains(entry.key),
                             onChanged: (bool? value) {
                               setState(() {
@@ -538,15 +538,15 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel',
-                style: TextStyle(color: const Color(0xFFF97316))),
+              child: const Text('Cancel',
+                style: TextStyle(color: Color(0xFFF97316))),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Save',
-                style: TextStyle(color: const Color(0xFFF97316))),
+              child: const Text('Save',
+                style: TextStyle(color: Color(0xFFF97316))),
               onPressed: () {
                 setState(() {
                   _selectedSensors = tempSelectedSensors;
