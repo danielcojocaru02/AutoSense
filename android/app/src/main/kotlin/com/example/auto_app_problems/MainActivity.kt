@@ -1,4 +1,4 @@
-package com.example.auto_app_problems
+package com.ornad.autosense
 
 import io.flutter.embedding.android.FlutterActivity
 
